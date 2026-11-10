@@ -179,6 +179,8 @@ enum PrintFooterOption {
 #define INI_SECTION_NAME_WINDOW_POSITION		L"Window Position"
 #define INI_SECTION_NAME_TOOLBAR_LABELS			L"Toolbar Labels"
 #define INI_SECTION_NAME_SUPPRESSED_MESSAGES	L"Suppressed Messages"
+// Remember Edit State: per-file caret/scroll/fold state, keyed by escaped path
+#define INI_SECTION_NAME_EDITSTATE				L"EditState"
 
 #define MRU_KEY_RECENT_FILES					L"Recent Files"
 #define MRU_KEY_RECENT_FIND						L"Recent Find"

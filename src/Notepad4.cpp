@@ -383,6 +383,12 @@ static bool bStickyWindowPosition	= false;
 static int flagReadOnlyMode			= ReadOnlyMode_None;
 static TripleBoolean flagMultiFileArg = TripleBoolean_NotSet;
 static bool	flagSingleFileInstance	= true;
+// when true, a second launch with a file sends it to the existing window as a new tab
+// (instead of opening a separate window with only that file); see ActivatePrevInst()
+static bool	bAppendFileAsTab	= false;
+// when enabled, each tab remembers caret, scroll position and fold expand state,
+// restored on tab switch and (caret/scroll) when reopening the same file
+static bool	bRememberEditState	= true;
 static bool	flagStartAsTrayIcon		= false;
 static TripleBoolean flagAlwaysOnTop= TripleBoolean_NotSet;
 static bool	flagRelativeFileMRU		= false;
@@ -435,6 +441,10 @@ struct EditorTab {
 	Sci_Line iTopLine;
 	int iXOffset;
 	WCHAR szTitleExcerpt[128];
+	// Remember Edit State: header lines whose fold state was "collapsed" when the tab
+	// was last left; restored on switch. Bounded, most files fold only a few blocks.
+	int foldCount;
+	Sci_Line foldLines[64];
 };
 
 static EditorTab editorTabs[MAX_EDITOR_TABS];
@@ -467,6 +477,9 @@ static int TabBarReorderTargetIndex(POINT ptScreen) noexcept;
 static void TabBarUpdateDropTarget(int index) noexcept;
 static void TabBarPaintDropTarget(HWND hwnd) noexcept;
 static void TabBarReorder(int from, int to) noexcept;
+static void EditStateEscapePath(LPCWSTR pszPath, LPWSTR pszKey, int cchKey) noexcept;
+static void EditStateSaveForFile(LPCWSTR pszPath) noexcept;
+static void EditStateRestoreForFile(LPCWSTR pszPath) noexcept;
 static bool SendTabTransfer(HWND hwndTarget, LPCWSTR lpszFile, bool flagUnsaved) noexcept;
 static bool TabMoveToWindow(HWND hwndTarget, int index) noexcept;
 static void TabSaveCurrent() noexcept;
@@ -2853,6 +2866,8 @@ void MsgInitMenu(HWND hwnd, WPARAM wParam, LPARAM lParam) noexcept {
 	CheckCmd(hmenu, IDM_VIEW_STICKY_WINDOW_POSITION, bStickyWindowPosition);
 	DisableCmd(hmenu, IDM_VIEW_CLEARWINPOS, bStickyWindowPosition);
 	CheckCmd(hmenu, IDM_VIEW_SINGLEFILEINSTANCE, bSingleFileInstance);
+	CheckCmd(hmenu, IDM_VIEW_APPENDFILEASTAB, bAppendFileAsTab);
+	CheckCmd(hmenu, IDM_SET_REMEMBEREDITSTATE, bRememberEditState);
 	CheckCmd(hmenu, IDM_VIEW_ALWAYSONTOP, IsTopMost());
 	CheckCmd(hmenu, IDM_VIEW_MINTOTRAY, bMinimizeToTray);
 	CheckCmd(hmenu, IDM_VIEW_TRANSPARENT, bTransparentMode == TransparentMode_Always);
@@ -4277,27 +4292,30 @@ LRESULT MsgCommand(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 	case IDM_VIEW_FOLD_DEFAULT:
 		if (bShowCodeFolding) {
 			FoldToggleDefault(FOLD_ACTION_SNIFF);
+			EditInvalidateScrollMarks();
 		}
 		break;
 
 	case IDM_VIEW_FOLD_ALL:
 		if (bShowCodeFolding) {
 			FoldToggleAll(FOLD_ACTION_SNIFF);
+			EditInvalidateScrollMarks();
 		}
 		break;
 
 	case IDM_VIEW_FOLD_CURRENT_BLOCK:
 		if (bShowCodeFolding) {
 			FoldToggleCurrentBlock(FOLD_ACTION_SNIFF);
+			EditInvalidateScrollMarks();
 		}
 		break;
 
 	case IDM_VIEW_FOLD_CURRENT_LEVEL:
 		if (bShowCodeFolding) {
 			FoldToggleCurrentLevel(FOLD_ACTION_SNIFF);
+			EditInvalidateScrollMarks();
 		}
 		break;
-
 	case IDM_VIEW_FOLD_LEVEL1:
 	case IDM_VIEW_FOLD_LEVEL2:
 	case IDM_VIEW_FOLD_LEVEL3:
@@ -4310,6 +4328,7 @@ LRESULT MsgCommand(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 	case IDM_VIEW_FOLD_LEVEL10:
 		if (bShowCodeFolding) {
 			FoldToggleLevel(LOWORD(wParam) - IDM_VIEW_FOLD_LEVEL1, FOLD_ACTION_SNIFF);
+			EditInvalidateScrollMarks();
 		}
 		break;
 
@@ -4458,6 +4477,23 @@ LRESULT MsgCommand(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 	case IDM_VIEW_SINGLEFILEINSTANCE:
 		bSingleFileInstance = !bSingleFileInstance;
 		IniSetBoolEx(INI_SECTION_NAME_FLAGS, L"SingleFileInstance", bSingleFileInstance, true);
+		break;
+
+	case IDM_VIEW_APPENDFILEASTAB:
+		bAppendFileAsTab = !bAppendFileAsTab;
+		// takes effect on the next launch that reaches ActivatePrevInst(); persist immediately
+		IniSetBoolEx(INI_SECTION_NAME_FLAGS, L"AppendFileAsTab", bAppendFileAsTab, false);
+		break;
+
+	case IDM_SET_REMEMBEREDITSTATE:
+		bRememberEditState = !bRememberEditState;
+		IniSetBoolEx(INI_SECTION_NAME_SETTINGS, L"RememberEditState", bRememberEditState, false);
+		if (!bRememberEditState) {
+			// clear saved state so re-enabling starts fresh
+			for (int i = 0; i < iTabCount; i++) {
+				editorTabs[i].foldCount = 0;
+			}
+		}
 		break;
 
 	case IDT_VIEW_ALWAYSONTOP:
@@ -5608,6 +5644,7 @@ void LoadSettings() noexcept {
 
 	bSaveBeforeRunningTools = section.GetBool(L"SaveBeforeRunningTools", false);
 	bOpenFileInNewWindow = section.GetBool(L"OpenFileInNewWindow", false);
+	bRememberEditState = section.GetBool(L"RememberEditState", true);
 	bOpenFolderWithMatepath = section.GetBool(L"OpenFolderWithMatepath", true);
 
 	iValue = section.GetInt(L"FileWatchingMode", FileWatchingMode_AutoReload);
@@ -5875,6 +5912,7 @@ void SaveSettings(bool bSaveSettingsNow) noexcept {
 
 	section.SetBoolEx(L"SaveBeforeRunningTools", bSaveBeforeRunningTools, false);
 	section.SetBoolEx(L"OpenFileInNewWindow", bOpenFileInNewWindow, false);
+	section.SetBoolEx(L"RememberEditState", bRememberEditState, true);
 	section.SetBoolEx(L"OpenFolderWithMatepath", bOpenFolderWithMatepath, true);
 
 	section.SetIntEx(L"FileWatchingMode", iFileWatchingMode, FileWatchingMode_AutoReload);
@@ -6589,6 +6627,7 @@ void LoadFlags() noexcept {
 	bSingleFileInstance = section.GetBool(L"SingleFileInstance", true);
 	bReuseWindow = section.GetBool(L"ReuseWindow", false);
 	bStickyWindowPosition = section.GetBool(L"StickyWindowPosition", false);
+	bAppendFileAsTab = section.GetBool(L"AppendFileAsTab", false);
 
 	if (!flagReuseWindow && !flagNoReuseWindow) {
 		flagNoReuseWindow = !bReuseWindow;
@@ -7334,6 +7373,11 @@ bool FileLoad(FileLoadFlag loadFlag, LPCWSTR lpszFile) {
 				SciCall_LineScroll(0, iVisTopLine - iNewTopLine);
 				SciCall_SetXOffset(iXOffset);
 			}
+		} else {
+			// Remember Edit State: jump to the caret and re-collapse the folds saved
+			// when this file was last closed. Skipped when reloading keeps its own view.
+			EditStateRestoreForFile(szCurFile);
+			EditInvalidateScrollMarks();
 		}
 
 		bInitDone = true;
@@ -7431,6 +7475,94 @@ static void TabBarCreate(HWND hwnd) noexcept {
 		TabBarUpdateFont();
 		// subclass to detect tab dragging (selection/clicks still pass through)
 		SetWindowSubclass(hwndTabBar, TabBarDragProc, 2, 0);
+	}
+}
+
+//=============================================================================
+//
+// Remember Edit State: per-file caret/scroll/fold state in the ini file.
+//
+// [EditState] section, key = full path with '% doubled (Windows ini keys are
+// case-insensitive, which matches PathEqual()); value = "line,col;f1,f2,..."
+// with line/col = 1-based caret position and fN = collapsed fold header lines.
+//
+#define EDITSTATE_MAX_FOLDS 64
+
+static void EditStateEscapePath(LPCWSTR pszPath, LPWSTR pszKey, int cchKey) noexcept {
+	int j = 0;
+	for (int i = 0; pszPath[i] != L'\0' && j < cchKey - 3; i++) {
+		const WCHAR ch = pszPath[i];
+		if (ch == L'%') {
+			pszKey[j++] = L'%';
+		}
+		pszKey[j++] = ch;
+	}
+	pszKey[j] = L'\0';
+}
+
+static void EditStateSaveForFile(LPCWSTR pszPath) noexcept {
+	if (!bRememberEditState || StrIsEmpty(pszPath) || StrIsEmpty(szIniFile)) {
+		return;
+	}
+	WCHAR szKey[MAX_PATH + 8];
+	EditStateEscapePath(pszPath, szKey, COUNTOF(szKey));
+
+	const Sci_Position pos = SciCall_GetCurrentPos();
+	const Sci_Line line = SciCall_LineFromPosition(pos) + 1;
+	const Sci_Position col = SciCall_GetColumn(pos, line - 1) + 1;
+
+	WCHAR szValue[16 * EDITSTATE_MAX_FOLDS + 32];
+	int cch = wsprintf(szValue, L"%d,%d", static_cast<int>(line), static_cast<int>(col));
+	if (bShowCodeFolding) {
+		const Sci_Line lineCount = SciCall_GetLineCount();
+		int saved = 0;
+		for (Sci_Line i = 0; i < lineCount && saved < EDITSTATE_MAX_FOLDS; i++) {
+			if ((SciCall_GetFoldLevel(i) & SC_FOLDLEVELHEADERFLAG) && !SciCall_GetFoldExpanded(i)) {
+				cch += wsprintf(szValue + cch, L";%d", static_cast<int>(i));
+				saved++;
+			}
+		}
+	}
+	WritePrivateProfileString(INI_SECTION_NAME_EDITSTATE, szKey, szValue, szIniFile);
+}
+
+static void EditStateRestoreForFile(LPCWSTR pszPath) noexcept {
+	if (!bRememberEditState || StrIsEmpty(pszPath) || StrIsEmpty(szIniFile)) {
+		return;
+	}
+	WCHAR szKey[MAX_PATH + 8];
+	EditStateEscapePath(pszPath, szKey, COUNTOF(szKey));
+	WCHAR szValue[16 * EDITSTATE_MAX_FOLDS + 32] = L"";
+	GetPrivateProfileString(INI_SECTION_NAME_EDITSTATE, szKey, L"", szValue,
+		COUNTOF(szValue), szIniFile);
+	if (StrIsEmpty(szValue)) {
+		return;
+	}
+
+	// "line,col;f1,f2,..."
+	int line = 0, col = 0;
+	LPWSTR p = szValue;
+	line = static_cast<int>(wcstol(p, &p, 10));
+	if (*p == L',') {
+		p++;
+		col = static_cast<int>(wcstol(p, &p, 10));
+	}
+	if (line > 0) {
+		EditJumpTo(line, col, TRUE);
+	}
+	if (bShowCodeFolding) {
+		SendMessage(hwndEdit, WM_SETREDRAW, FALSE, 0);
+		while (*p == L';') {
+			p++;
+			const int foldLine = static_cast<int>(wcstol(p, &p, 10));
+			if (foldLine > 0 && foldLine < SciCall_GetLineCount()
+				&& (SciCall_GetFoldLevel(foldLine) & SC_FOLDLEVELHEADERFLAG)
+				&& SciCall_GetFoldExpanded(foldLine)) {
+				SciCall_FoldLine(foldLine, SC_FOLDACTION_CONTRACT);
+			}
+		}
+		SendMessage(hwndEdit, WM_SETREDRAW, TRUE, 0);
+		InvalidateRect(hwndEdit, nullptr, TRUE);
 	}
 }
 
@@ -7774,6 +7906,16 @@ static void TabSaveCurrent() noexcept {
 	tab.fileVars = fvCurFile;
 	lstrcpyn(tab.szPath, szCurFile, COUNTOF(tab.szPath));
 	lstrcpyn(tab.szTitleExcerpt, szTitleExcerpt, COUNTOF(tab.szTitleExcerpt));
+	// Remember Edit State: snapshot collapsed fold headers
+	tab.foldCount = 0;
+	if (bRememberEditState && bShowCodeFolding) {
+		const Sci_Line lineCount = SciCall_GetLineCount();
+		for (Sci_Line line = 0; line < lineCount && tab.foldCount < COUNTOF(tab.foldLines); line++) {
+			if ((SciCall_GetFoldLevel(line) & SC_FOLDLEVELHEADERFLAG) && !SciCall_GetFoldExpanded(line)) {
+				tab.foldLines[tab.foldCount++] = line;
+			}
+		}
+	}
 }
 
 static void TabSyncCurrent() noexcept {
@@ -7796,7 +7938,7 @@ static void TabSyncCurrent() noexcept {
 }
 
 static void TabRestoreCurrent() noexcept {
-	const EditorTab &tab = editorTabs[iTabCurrent];
+	EditorTab &tab = editorTabs[iTabCurrent];
 	fvCurFile = tab.fileVars;
 	pLexCurrent = tab.pLexer;
 	iCurrentEncoding = tab.iEncoding;
@@ -7813,6 +7955,23 @@ static void TabRestoreCurrent() noexcept {
 	SciCall_SetEOLMode(tab.iEolMode);
 	fvCurFile.Apply();
 	SetDlgItemText(hwndMain, IDC_FILENAME, szCurFile);
+	// Remember Edit State: re-collapse the fold headers saved when this tab was left.
+	// Only headers that are still expanded are touched, so edits done in the meantime
+	// (new/removed lines) cannot collapse wrong regions.
+	if (bRememberEditState && bShowCodeFolding) {
+		SendMessage(hwndEdit, WM_SETREDRAW, FALSE, 0);
+		const int count = tab.foldCount;
+		for (int i = 0; i < count; i++) {
+			const Sci_Line line = tab.foldLines[i];
+			if (line < SciCall_GetLineCount()
+				&& (SciCall_GetFoldLevel(line) & SC_FOLDLEVELHEADERFLAG)
+				&& SciCall_GetFoldExpanded(line)) {
+				SciCall_FoldLine(line, SC_FOLDACTION_CONTRACT);
+			}
+		}
+		SendMessage(hwndEdit, WM_SETREDRAW, TRUE, 0);
+		InvalidateRect(hwndEdit, nullptr, TRUE);
+	}
 	SciCall_SetSel(tab.iAnchor, tab.iCaret);
 	SciCall_SetFirstVisibleLine(tab.iTopLine);
 	SciCall_SetXOffset(tab.iXOffset);
@@ -7904,6 +8063,8 @@ static bool TabClose(int index) noexcept {
 	if (!FileSave(FileSaveFlag_Ask)) {
 		return false;
 	}
+	// persist caret/scroll/fold state so reopening the file starts where it was left
+	EditStateSaveForFile(szCurFile);
 
 	if (iTabCount <= 1) {
 		// the tab was already handled above, destroy the window without asking again
@@ -7981,6 +8142,8 @@ static bool TabAskSaveAll() noexcept {
 			}
 			return false;
 		}
+		// window is closing: persist per-file edit state for every tab
+		EditStateSaveForFile(szCurFile);
 	}
 	if (current >= 0 && current < iTabCount) {
 		TabSwitchTo(current);
@@ -8318,7 +8481,10 @@ static BOOL CALLBACK EnumWindProcSingleFileInstance(HWND hwnd, LPARAM lParam) no
 	if (GetClassName(hwnd, szClassName, COUNTOF(szClassName))) {
 		if (StrCaseEqual(szClassName, wchWndClass)) {
 			WCHAR tchFileName[MAX_PATH];
-			if (lpFileArg == nullptr || (GetDlgItemText(hwnd, IDC_FILENAME, tchFileName, COUNTOF(tchFileName)) && PathEquivalent(tchFileName, lpFileArg))) {
+			// AppendFileAsTab: any window of ours can take the file as a new tab,
+			// so do not filter by "the window already shows exactly this file".
+			if (lpFileArg == nullptr || bAppendFileAsTab
+				|| (GetDlgItemText(hwnd, IDC_FILENAME, tchFileName, COUNTOF(tchFileName)) && PathEquivalent(tchFileName, lpFileArg))) {
 				*AsPointer<HWND *>(lParam) = hwnd;
 				if (IsWindowEnabled(hwnd)) {
 					bContinue = FALSE;
@@ -8334,7 +8500,9 @@ static void ActivatePrevWindow(HWND hwnd, LPCWSTR lpszFile) noexcept {
 	int cchTitleExcerpt = 0;
 	if (lpszFile) {
 		cb += (lstrlen(lpszFile) + 1) * sizeof(WCHAR);
-		cb += (lstrlen(lpSchemeArg) + 1) * sizeof(WCHAR);
+		if (flagLexerSpecified) {
+			cb += (lstrlen(lpSchemeArg) + 1) * sizeof(WCHAR);
+		}
 		cchTitleExcerpt = lstrlen(szTitleExcerpt);
 		if (cchTitleExcerpt) {
 			cb += (cchTitleExcerpt + 1) * sizeof(WCHAR);
@@ -8359,18 +8527,20 @@ static void ActivatePrevWindow(HWND hwnd, LPCWSTR lpszFile) noexcept {
 		params->flagFileSpecified = true;
 		lstrcpy(lpsz, lpszFile);
 		params->iInitialLexer = iInitialLexer;
-		if (flagLexerSpecified && lpSchemeArg) {
-			params->iInitialLexer = 0;
-			lpsz = StrEnd(lpsz) + 1;
-			lstrcpy(lpsz, lpSchemeArg);
-		}
-		if (cchTitleExcerpt) {
-			params->flagTitleExcerpt = true;
-			lpsz = StrEnd(lpsz) + 1;
-			lstrcpy(lpsz, szTitleExcerpt);
-		}
-		if (lpMatchArg) {
-			lpsz = StrEnd(lpsz) + 1;
+		if (flagLexerSpecified) {
+			if (lpSchemeArg) {
+				params->iInitialLexer = 0;
+				lpsz = StrEnd(lpsz) + 1;
+				lstrcpy(lpsz, lpSchemeArg);
+			}
+			if (cchTitleExcerpt) {
+				params->flagTitleExcerpt = true;
+				lpsz = StrEnd(lpsz) + 1;
+				lstrcpy(lpsz, szTitleExcerpt);
+			}
+			if (lpMatchArg) {
+				lpsz = StrEnd(lpsz) + 1;
+			}
 		}
 	}
 	if (lpMatchArg) {
@@ -8414,7 +8584,10 @@ bool ActivatePrevInst() noexcept {
 
 		GetLongPathName(lpszFile, lpszFile, MAX_PATH);
 		EnumWindows(EnumWindProcSingleFileInstance, AsInteger<LPARAM>(&hwnd));
-		lpszFile = nullptr;
+		// when a window was found the file is forwarded to it as a new tab (append)
+		// or replaces its content (upstream single-file-instance); keep lpszFile set.
+		// when no window was found, lpFileArg stays ours to open normally.
+		lpszFile = (hwnd != nullptr) ? lpFileArg : nullptr;
 	} else if (!flagNoReuseWindow) {
 		lpFileArg = nullptr;
 		EnumWindows(EnumWindProcSingleFileInstance, AsInteger<LPARAM>(&hwnd));

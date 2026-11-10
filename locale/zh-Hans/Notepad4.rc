@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "插入制表符为空格(&S)",			IDM_VIEW_TABSASSPACES
 		MENUITEM "只从新窗口打开",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "记忆编辑状态(&R)",			IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "制表符设置(&T)...\tCtrl+T",		IDM_VIEW_TABSETTINGS
 		MENUITEM "自动换行设置(&W)...",				IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "长行设置(&L)...",					IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "单文件实例模式(&F)",				IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "文件追加为新标签(&T)",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "文件变更通知(&C)...\tAlt+F5",		IDM_VIEW_CHANGENOTIFY
 		MENUITEM "自动保存设置(&U)...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "Esc 键特别功能(&K)"

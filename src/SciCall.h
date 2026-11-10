@@ -1340,7 +1340,11 @@ inline Sci_Line SciCall_DocLineFromVisible(Sci_Line displayLine) noexcept {
 	return SciCall(SCI_DOCLINEFROMVISIBLE, displayLine, 0);
 }
 
-inline bool SciCall_GetLineVisible(Sci_Line line) noexcept {
+inline Sci_Line SciCall_VisibleFromDocLine(Sci_Line docLine) noexcept {
+	return SciCall(SCI_VISIBLEFROMDOCLINE, docLine, 0);
+}
+
+inline Sci_Line SciCall_GetLineVisible(Sci_Line line) noexcept {
 	return static_cast<bool>(SciCall(SCI_GETLINEVISIBLE, line, 0));
 }
 

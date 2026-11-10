@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Vstavi zavihke kot &presledke",			IDM_VIEW_TABSASSPACES
 		MENUITEM "Vedno odpri v novem oknu",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "&Remember Edit State",			IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "&Nastavitve zavihkov...\tCtrl+T",		IDM_VIEW_TABSETTINGS
 		MENUITEM "Nastavitve &prelamljanja...",			IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "Nastavitve &dolgih vrstic...",			IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "Single &File Instance",			IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "Append Files as &Tabs",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "File &Change Notification...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "A&utoSave Settings...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "Extra Esc &Key Function"

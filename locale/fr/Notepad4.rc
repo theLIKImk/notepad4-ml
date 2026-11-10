@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Insérer les tabulations comme des espaces",			IDM_VIEW_TABSASSPACES
 		MENUITEM "Toujours ouvrir dans une nouvelle fenêtre",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "&Mémoriser l'état d'édition",		IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "Réglage de la tabulation...\tCtrl+T",		IDM_VIEW_TABSETTINGS
 		MENUITEM "Réglage du retour à la ligne automatique...",			IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "Réglage de la limite de ligne DOS...",			IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "Une seule instance de Notepad4 possible",			IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "Ajouter les fichiers comme on&glets",	IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "Notifier si un fichier est modifié hors de Notepad4...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "Régalge de sauvegarde automatique...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "Fonction additionnelle de la touche Escape"

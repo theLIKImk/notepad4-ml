@@ -8,7 +8,7 @@ Notepad4-ML 是基于 [Notepad4](https://github.com/zufuliu/notepad4) 的多标�
 为这个原本单文档的轻量编辑器增加了标签页与滚动条匹配标记。
 
   
-- **版本**：0.2.0
+- **版本**：0.2.1
 - **基于上游**：Notepad4 v26.10 (r6392, 7b269f54)
 - **上游基线提交**：`3afea94b18c469b95b504553a5ece1a9e4c57d9e`（2026-10-23）
 - **许可**：BSD 3-Clause，见 [LICENSE](LICENSE)（全文）与 [NOTICE](NOTICE)（上游版权与分支说明）  

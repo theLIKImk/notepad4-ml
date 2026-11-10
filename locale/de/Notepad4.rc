@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Tab als &Leerzeichen einfügen",		IDM_VIEW_TABSASSPACES
 		MENUITEM "Immer in neuem Fenster öffnen",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "&Bearbeitungsstatus merken",		IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "&Tab anpassen...\tStrg+T",			IDM_VIEW_TABSETTINGS
 		MENUITEM "Zeilenu&mbruch anpassen...",			IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "&Zeilenlänge anpassen...",			IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "Einzeldatei&instanz",						IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "Dateien als &Tabs anhängen",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "&Dateiänderungsnachricht ...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "Aut&omatisches Speichern...",				IDM_SET_FILE_AUTOSAVE
 		POPUP "Fun&ktion der Esc Taste"

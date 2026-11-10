@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -582,6 +582,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Вставлять табуляции как &пробелы",							IDM_VIEW_TABSASSPACES
 		MENUITEM "Всегда открывать в новом окне",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "&Запоминать состояние правки",		IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "&Настройки табуляции...\tCtrl+T",							IDM_VIEW_TABSETTINGS
 		MENUITEM "Настройки переноса с&лов...",								IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "Настройки длинных строк...",								IDM_VIEW_LONGLINESETTINGS
@@ -668,6 +669,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "Один &экземпляр файла",								IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "Открывать файлы &вкладками",		IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "&Уведомление об изменении файла...\tAlt+F5",						IDM_VIEW_CHANGENOTIFY
 		MENUITEM "Настройки &автосохранения...",							IDM_SET_FILE_AUTOSAVE
 		POPUP "Дополнительная функция клавиши Esc"

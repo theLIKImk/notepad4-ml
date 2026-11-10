@@ -5518,6 +5518,12 @@ static void EditPaintScrollMarks(HWND hwnd) noexcept {
 	if (lineCount <= 1) {
 		return;
 	}
+	// map marker lines through visible lines, so that marks sit at the same relative
+	// height as the content when some lines are folded (bug: folded blocks shifted marks)
+	const Sci_Line visibleCount = SciCall_VisibleFromDocLine(lineCount - 1) + 1;
+	if (visibleCount <= 1) {
+		return;
+	}
 
 	HDC hdc = GetWindowDC(hwnd);
 	if (!hdc) {
@@ -5529,7 +5535,8 @@ static void EditPaintScrollMarks(HWND hwnd) noexcept {
 	HBRUSH brush = CreateSolidBrush(ScrollMarkBlendedColor());
 	for (Sci_Line line = SciCall_MarkerNext(0, MarkerBitmask_ScrollMark); line >= 0;
 		line = SciCall_MarkerNext(line + 1, MarkerBitmask_ScrollMark)) {
-		const int y = rcBar.top + static_cast<int>(static_cast<int64_t>(line) * barHeight / lineCount);
+		const Sci_Line displayLine = SciCall_VisibleFromDocLine(line);
+		const int y = rcBar.top + static_cast<int>(static_cast<int64_t>(displayLine) * barHeight / visibleCount);
 		const RECT rcMark = { rcBar.left + 1, y, rcBar.right - 1, y + markHeight };
 		FillRect(hdc, &rcMark, brush);
 	}
@@ -7722,6 +7729,8 @@ void FinishBatchFold() noexcept {
 	SciCall_SetXCaretPolicy(CARET_SLOP | CARET_EVEN, 50);
 	SciCall_SetYCaretPolicy(CARET_EVEN, 0);
 	InvalidateRect(hwndEdit, nullptr, TRUE);
+	// folding changed the visible-line mapping: repaint the scrollbar match marks
+	EditInvalidateScrollMarks();
 }
 
 }
@@ -7973,6 +7982,7 @@ void FoldClickAt(Sci_Position pos, int mode) noexcept {
 	}
 
 	FoldPerformAction(ln, mode, FOLD_ACTION_SNIFF);
+	EditInvalidateScrollMarks();
 	if (fGotoFoldPoint) {
 		EditJumpTo(ln + 1, 0);
 	}
@@ -8111,5 +8121,6 @@ void EditGotoBlock(int menu) noexcept {
 	if (iLine >= 0 && iLine != iCurLine) {
 		const Sci_Position column = SciCall_GetColumn(iCurPos, iCurLine);
 		EditJumpTo(iLine + 1, column + 1);
+		EditInvalidateScrollMarks();
 	}
 }

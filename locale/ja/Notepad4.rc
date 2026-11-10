@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "タブキーで空白を入力(&S)",			IDM_VIEW_TABSASSPACES
 		MENUITEM "常に新しいウィンドウで開く",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "編集状態を記憶する(&R)",			IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "タブキーの設定(&T)...\tCtrl+T",		IDM_VIEW_TABSETTINGS
 		MENUITEM "折り返し方の設定(&W)...",			IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "行の長さガイドの設定(&L)...",			IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "単一インスタンスでファイルを開く(&F)",			IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "ファイルをタブとして追加(&T)",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "ファイルの変更を通知(&C)...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "自動保存の設定(&U)...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "Escキーの動作(&K)"

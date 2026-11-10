@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "공백으로 탭 삽입(&S)",									IDM_VIEW_TABSASSPACES
 		MENUITEM "항상 새 창에서 열기",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "편집 상태 기억(&R)",			IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "탭 설정(&T)...\tCtrl+T",								IDM_VIEW_TABSETTINGS
 		MENUITEM "줄바꿈 설정(&W)...",									IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "긴 줄 설정(&L)...",									IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "단일 파일 인스턴스(&F)",								IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "파일을 탭으로 추가(&T)",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "파일 변경 알림(&C)...\tAlt+F5",						IDM_VIEW_CHANGENOTIFY
 		MENUITEM "자동 저장 설정(&U)...",								IDM_SET_FILE_AUTOSAVE
 		POPUP "Esc 키 추가 기능(&K)"

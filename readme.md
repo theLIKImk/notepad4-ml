@@ -7,7 +7,7 @@
 Notepad4-ML is a multi-tab fork based on [Notepad4](https://github.com/zufuliu/notepad4),
 adding tabs and scrollbar match markers to this originally single-document lightweight editor.
 
-- **Version**: 0.2.0
+- **Version**: 0.2.1
 - **Based on upstream**: Notepad4 v26.10 (r6392, 7b269f54)
 - **Upstream baseline commit**: `3afea94b18c469b95b504553a5ece1a9e4c57d9e` (2026-10-23)
 - **License**: BSD 3-Clause, see [LICENSE](LICENSE) (full text) and [NOTICE](NOTICE) (upstream copyright and fork notice)

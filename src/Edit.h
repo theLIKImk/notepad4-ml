@@ -719,6 +719,8 @@ void FoldToggleLevel(int lev, FOLD_ACTION action) noexcept;
 void FoldToggleCurrentBlock(FOLD_ACTION action) noexcept;
 void FoldToggleCurrentLevel(FOLD_ACTION action) noexcept;
 void FoldToggleDefault(FOLD_ACTION action) noexcept;
+// repaint the match marks on the vertical scrollbar (display-line mapping changed)
+void EditInvalidateScrollMarks() noexcept;
 void FoldClickAt(Sci_Position pos, int mode) noexcept;
 void FoldAltArrow(int key, int mode) noexcept;
 void EditGotoBlock(int menu) noexcept;

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "Inserir Tabulações como E&spaços",	IDM_VIEW_TABSASSPACES
 		MENUITEM "Sempre abrir em nova janela",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "&Lembrar estado de edição",		IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "Configurações de &Tabulação...\tCtrl+T",	IDM_VIEW_TABSETTINGS
 		MENUITEM "Configurações de Quebra de &Linha...",	IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "Configurações de Linha &Longa...",	IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "Instância Única de A&rquivo",			IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "Anexar arquivos como &abas",		IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "Notificação de Alteraçã&o de Arquivo...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "Configurações de Salvamento A&utomático...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "Função Adicional da Tecla &Esc"

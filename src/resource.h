@@ -435,6 +435,10 @@
 #define IDM_TAB_PREV					40034	// Ctrl+Shift+Tab
 #define IDM_VIEW_SCROLLMARKSETTINGS		40035
 #define IDM_SET_OPENFILEINNEWWINDOW		40036
+// "Append open-file requests to the existing window as new tabs" (Window Options)
+#define IDM_VIEW_APPENDFILEASTAB		40037
+// "Remember Edit State" (Settings): per-tab caret, scroll and fold expand state
+#define IDM_SET_REMEMBEREDITSTATE		40038
 //
 #define IDM_VIEW_SINGLEFILEINSTANCE		40040
 #define IDM_SET_USE_INLINE_IME			40041

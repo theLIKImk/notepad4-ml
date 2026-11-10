@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "../../src/resource.h"
 #include "../../src/config.h"
@@ -581,6 +581,7 @@ BEGIN
 	BEGIN
 		MENUITEM "插入 Tab 為空白(&S)",			IDM_VIEW_TABSASSPACES
 		MENUITEM "只從新視窗開啟",	IDM_SET_OPENFILEINNEWWINDOW
+		MENUITEM "記憶編輯狀態(&R)",			IDM_SET_REMEMBEREDITSTATE
 		MENUITEM "Tab 設定(&T)...\tCtrl+T",		IDM_VIEW_TABSETTINGS
 		MENUITEM "自動換行設定...(&W)",			IDM_VIEW_WORDWRAPSETTINGS
 		MENUITEM "長行設定(&L)...",				IDM_VIEW_LONGLINESETTINGS
@@ -667,6 +668,7 @@ BEGIN
 		END
 		MENUITEM SEPARATOR
 		MENUITEM "單個實體模式(&F)",				IDM_VIEW_SINGLEFILEINSTANCE
+			MENUITEM "檔案追加為新標籤(&T)",			IDM_VIEW_APPENDFILEASTAB
 		MENUITEM "檔案變更通知(&C)...\tAlt+F5",	IDM_VIEW_CHANGENOTIFY
 		MENUITEM "自動儲存設定(&U)...",			IDM_SET_FILE_AUTOSAVE
 		POPUP "額外 Esc 鍵功能(&K)"
